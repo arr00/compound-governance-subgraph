@@ -56,10 +56,12 @@ export function handleProposalCreated(event: ProposalCreated): void {
   proposer = getOrCreateDelegate(event.params.proposer.toHexString());
 
   proposal.proposer = proposer.id;
-  proposal.targets = event.params.targets as Bytes[];
+  proposal.targets = changetype<Bytes[]>(event.params.targets);
   proposal.values = event.params.values;
   proposal.signatures = event.params.signatures;
   proposal.calldatas = event.params.calldatas;
+  proposal.creationBlock = event.block.number;
+  proposal.creationTime = event.block.timestamp;
   proposal.startBlock = event.params.startBlock;
   proposal.endBlock = event.params.endBlock;
   proposal.description = event.params.description;
@@ -76,6 +78,9 @@ export function handleProposalCanceled(event: ProposalCanceled): void {
   let proposal = getOrCreateProposal(event.params.id.toString());
 
   proposal.status = STATUS_CANCELLED;
+  proposal.cancellationBlock = event.block.number;
+  proposal.cancellationTime = event.block.timestamp;
+
   proposal.save();
 }
 
@@ -103,6 +108,9 @@ export function handleProposalExecuted(event: ProposalExecuted): void {
 
   proposal.status = STATUS_EXECUTED;
   proposal.executionETA = null;
+  proposal.executionBlock = event.block.number;
+  proposal.executionTime = event.block.timestamp;
+  
   proposal.save();
 
   governance.proposalsQueued = governance.proposalsQueued - BIGINT_ONE;
@@ -326,7 +334,7 @@ export function handleProposalCreatedAlpha(event: ProposalCreated): void {
   proposer = getOrCreateDelegate(event.params.proposer.toHexString());
 
   proposal.proposer = proposer.id;
-  proposal.targets = event.params.targets as Bytes[];
+  proposal.targets = changetype<Bytes[]>(event.params.targets);
   proposal.values = event.params.values;
   proposal.signatures = event.params.signatures;
   proposal.calldatas = event.params.calldatas;
