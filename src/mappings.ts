@@ -40,8 +40,8 @@ export function handleProposalCreated(event: ProposalCreated): void {
   let proposal = getOrCreateProposal(event.params.id.toString());
   let proposer = getOrCreateDelegate(
     event.params.proposer.toHexString(),
-    false
-  );
+    true
+  )!;
 
   // checking if the proposer was a delegate already accounted for, if not we should log an error
   // since it shouldn't be possible for a delegate to propose anything without first being "created"
@@ -53,7 +53,7 @@ export function handleProposalCreated(event: ProposalCreated): void {
   }
 
   // Creating it anyway since we will want to account for this event data, even though it should've never happened
-  proposer = getOrCreateDelegate(event.params.proposer.toHexString());
+  proposer = getOrCreateDelegate(event.params.proposer.toHexString())!;
 
   proposal.proposer = proposer.id;
   proposal.targets = changetype<Bytes[]>(event.params.targets);
@@ -129,20 +129,15 @@ export function handleVoteCast(event: VoteCast): void {
   let vote = getOrCreateVote(voteId);
   let voter = getOrCreateDelegate(event.params.voter.toHexString(), false);
 
-  // checking if the voter was a delegate already accounted for, if not we should log an error
-  // since it shouldn't be possible for a delegate to vote without first being "created"
   if (voter == null) {
-    log.error("Delegate {} not found on VoteCast. tx_hash: {}", [
-      event.params.voter.toHexString(),
-      event.transaction.hash.toHexString()
-    ]);
+    return;
   }
 
   // Creating it anyway since we will want to account for this event data, even though it should've never happened
   voter = getOrCreateDelegate(event.params.voter.toHexString());
 
   vote.proposal = proposal.id;
-  vote.voter = voter.id;
+  vote.voter = voter!.id;
   vote.votesRaw = event.params.votes;
   vote.votes = toDecimal(event.params.votes);
   vote.support = event.params.support == 1;
@@ -164,8 +159,8 @@ export function handleDelegateChanged(event: DelegateChanged): void {
   );
   let previousDelegate = getOrCreateDelegate(
     event.params.fromDelegate.toHexString()
-  );
-  let newDelegate = getOrCreateDelegate(event.params.toDelegate.toHexString());
+  )!;
+  let newDelegate = getOrCreateDelegate(event.params.toDelegate.toHexString())!;
 
   tokenHolder.delegate = newDelegate.id;
   tokenHolder.save();
@@ -183,7 +178,7 @@ export function handleDelegateChanged(event: DelegateChanged): void {
 
 export function handleDelegateVotesChanged(event: DelegateVotesChanged): void {
   let governance = getGovernanceEntity();
-  let delegate = getOrCreateDelegate(event.params.delegate.toHexString());
+  let delegate = getOrCreateDelegate(event.params.delegate.toHexString())!;
   let votesDifference = event.params.newBalance - event.params.previousBalance;
 
   delegate.delegatedVotesRaw = event.params.newBalance;
@@ -284,20 +279,15 @@ export function handleVoteCastAlpha(event: VoteCastAlpha): void {
   let vote = getOrCreateVote(voteId);
   let voter = getOrCreateDelegate(event.params.voter.toHexString(), false);
 
-  // checking if the voter was a delegate already accounted for, if not we should log an error
-  // since it shouldn't be possible for a delegate to vote without first being "created"
   if (voter == null) {
-    log.error("Delegate {} not found on VoteCast. tx_hash: {}", [
-      event.params.voter.toHexString(),
-      event.transaction.hash.toHexString()
-    ]);
+    return;
   }
 
   // Creating it anyway since we will want to account for this event data, even though it should've never happened
   voter = getOrCreateDelegate(event.params.voter.toHexString());
 
   vote.proposal = proposal.id;
-  vote.voter = voter.id;
+  vote.voter = voter!.id;
   vote.votesRaw = event.params.votes;
   vote.votes = toDecimal(event.params.votes);
   vote.support = event.params.support;
@@ -319,7 +309,7 @@ export function handleProposalCreatedAlpha(event: ProposalCreated): void {
   let proposer = getOrCreateDelegate(
     event.params.proposer.toHexString(),
     false
-  );
+  )!;
 
   // checking if the proposer was a delegate already accounted for, if not we should log an error
   // since it shouldn't be possible for a delegate to propose anything without first being "created"
@@ -331,7 +321,7 @@ export function handleProposalCreatedAlpha(event: ProposalCreated): void {
   }
 
   // Creating it anyway since we will want to account for this event data, even though it should've never happened
-  proposer = getOrCreateDelegate(event.params.proposer.toHexString());
+  proposer = getOrCreateDelegate(event.params.proposer.toHexString())!;
 
   proposal.proposer = proposer.id;
   proposal.targets = changetype<Bytes[]>(event.params.targets);

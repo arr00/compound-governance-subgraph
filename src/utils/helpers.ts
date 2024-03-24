@@ -44,7 +44,7 @@ export function getOrCreateDelegate(
   id: String,
   createIfNotFound: boolean = true,
   save: boolean = true
-): Delegate {
+): Delegate | null {
   let delegate = Delegate.load(id);
 
   if (delegate == null && createIfNotFound) {
@@ -64,7 +64,7 @@ export function getOrCreateDelegate(
     }
   }
 
-  return delegate as Delegate;
+  return delegate;
 }
 
 export function getOrCreateVote(
