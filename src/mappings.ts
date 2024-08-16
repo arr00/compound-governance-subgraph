@@ -129,20 +129,21 @@ export function handleVoteCast(event: VoteCast): void {
   let vote = getOrCreateVote(voteId);
   let voter = getOrCreateDelegate(event.params.voter.toHexString(), false);
 
-  if (voter == null) {
+  if (voter == null || event.params.votes == BIGINT_ZERO) {
     return;
   }
 
-  // Creating it anyway since we will want to account for this event data, even though it should've never happened
-  voter = getOrCreateDelegate(event.params.voter.toHexString());
-
   vote.proposal = proposal.id;
-  vote.voter = voter!.id;
+  vote.voter = voter.id;
   vote.votesRaw = event.params.votes;
   vote.votes = toDecimal(event.params.votes);
   vote.support = event.params.support == 1;
 
   vote.save();
+
+  // Increment proposals voted for voter
+  voter.numberVotes = voter.numberVotes + 1;
+  voter.save();
 
   if (proposal.status == STATUS_PENDING) {
     proposal.status = STATUS_ACTIVE;
@@ -279,20 +280,21 @@ export function handleVoteCastAlpha(event: VoteCastAlpha): void {
   let vote = getOrCreateVote(voteId);
   let voter = getOrCreateDelegate(event.params.voter.toHexString(), false);
 
-  if (voter == null) {
+  if (voter == null || event.params.votes == BIGINT_ZERO) {
     return;
   }
 
-  // Creating it anyway since we will want to account for this event data, even though it should've never happened
-  voter = getOrCreateDelegate(event.params.voter.toHexString());
-
   vote.proposal = proposal.id;
-  vote.voter = voter!.id;
+  vote.voter = voter.id;
   vote.votesRaw = event.params.votes;
   vote.votes = toDecimal(event.params.votes);
   vote.support = event.params.support;
 
   vote.save();
+
+  // Increment proposals voted for voter
+  voter.numberVotes = voter.numberVotes + 1;
+  voter.save();
 
   if (proposal.status == STATUS_PENDING) {
     proposal.status = STATUS_ACTIVE;

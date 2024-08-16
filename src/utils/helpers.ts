@@ -52,6 +52,7 @@ export function getOrCreateDelegate(
     delegate.delegatedVotesRaw = BIGINT_ZERO;
     delegate.delegatedVotes = BIGDECIMAL_ZERO;
     delegate.tokenHoldersRepresentedAmount = 0;
+    delegate.numberVotes = 0;
 
     if (id != ZERO_ADDRESS) {
       let governance = getGovernanceEntity();
