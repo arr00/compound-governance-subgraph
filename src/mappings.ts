@@ -4,22 +4,21 @@ import {
   ProposalCanceled,
   ProposalQueued,
   ProposalExecuted,
-  VoteCast
+  VoteCast,
 } from "../generated/GovernorBravo/GovernorBravo";
-import {
-  VoteCast as VoteCastAlpha
-} from "../generated/GovernorAlpha/GovernorAlpha";
+import { VoteCastWithParams } from "../generated/GovernorCharlie/GovernorCharlie";
+import { VoteCast as VoteCastAlpha } from "../generated/GovernorAlpha/GovernorAlpha";
 import {
   DelegateChanged,
   DelegateVotesChanged,
-  Transfer
+  Transfer,
 } from "../generated/CompoundToken/CompoundToken";
 import {
   getOrCreateTokenHolder,
   getOrCreateDelegate,
   getOrCreateProposal,
   getOrCreateVote,
-  getGovernanceEntity
+  getGovernanceEntity,
 } from "./utils/helpers";
 import {
   ZERO_ADDRESS,
@@ -29,7 +28,7 @@ import {
   STATUS_QUEUED,
   STATUS_PENDING,
   STATUS_EXECUTED,
-  STATUS_CANCELLED
+  STATUS_CANCELLED,
 } from "./utils/constants";
 import { toDecimal } from "./utils/decimals";
 
@@ -48,7 +47,7 @@ export function handleProposalCreated(event: ProposalCreated): void {
   if (proposer == null) {
     log.error("Delegate {} not found on ProposalCreated. tx_hash: {}", [
       event.params.proposer.toHexString(),
-      event.transaction.hash.toHexString()
+      event.transaction.hash.toHexString(),
     ]);
   }
 
@@ -110,7 +109,7 @@ export function handleProposalExecuted(event: ProposalExecuted): void {
   proposal.executionETA = null;
   proposal.executionBlock = event.block.number;
   proposal.executionTime = event.block.timestamp;
-  
+
   proposal.save();
 
   governance.proposalsQueued = governance.proposalsQueued - BIGINT_ONE;
@@ -137,6 +136,39 @@ export function handleVoteCast(event: VoteCast): void {
   vote.voter = voter.id;
   vote.votesRaw = event.params.votes;
   vote.votes = toDecimal(event.params.votes);
+  vote.support = event.params.support == 1;
+
+  vote.save();
+
+  // Increment proposals voted for voter
+  voter.numberVotes = voter.numberVotes + 1;
+  voter.save();
+
+  if (proposal.status == STATUS_PENDING) {
+    proposal.status = STATUS_ACTIVE;
+    proposal.save();
+  }
+}
+
+// - event: VoteCastWithPrams(address,uint256,uint8,uint256)
+//   handler: handleVoteCast
+export function handleVoteCastWithParams(event: VoteCastWithParams): void {
+  let proposal = getOrCreateProposal(event.params.proposalId.toString());
+  let voteId = event.params.voter
+    .toHexString()
+    .concat("-")
+    .concat(event.params.proposalId.toString());
+  let vote = getOrCreateVote(voteId);
+  let voter = getOrCreateDelegate(event.params.voter.toHexString(), false);
+
+  if (voter == null || event.params.weight == BIGINT_ZERO) {
+    return;
+  }
+
+  vote.proposal = proposal.id;
+  vote.voter = voter.id;
+  vote.votesRaw = event.params.weight;
+  vote.votes = toDecimal(event.params.weight);
   vote.support = event.params.support == 1;
 
   vote.save();
@@ -218,7 +250,7 @@ export function handleTransfer(event: Transfer): void {
     if (fromHolder.tokenBalanceRaw < BIGINT_ZERO) {
       log.error("Negative balance on holder {} with balance {}", [
         fromHolder.id,
-        fromHolder.tokenBalanceRaw.toString()
+        fromHolder.tokenBalanceRaw.toString(),
       ]);
     }
 
@@ -245,7 +277,8 @@ export function handleTransfer(event: Transfer): void {
   let toHolderPreviousBalance = toHolder.tokenBalanceRaw;
   toHolder.tokenBalanceRaw = toHolder.tokenBalanceRaw + event.params.amount;
   toHolder.tokenBalance = toDecimal(toHolder.tokenBalanceRaw);
-  toHolder.totalTokensHeldRaw = toHolder.totalTokensHeldRaw + event.params.amount;
+  toHolder.totalTokensHeldRaw =
+    toHolder.totalTokensHeldRaw + event.params.amount;
   toHolder.totalTokensHeld = toDecimal(toHolder.totalTokensHeldRaw);
 
   if (
@@ -302,7 +335,6 @@ export function handleVoteCastAlpha(event: VoteCastAlpha): void {
   }
 }
 
-
 // - event: ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)
 //   handler: handleProposalCreated
 
@@ -318,7 +350,7 @@ export function handleProposalCreatedAlpha(event: ProposalCreated): void {
   if (proposer == null) {
     log.error("Delegate {} not found on ProposalCreated. tx_hash: {}", [
       event.params.proposer.toHexString(),
-      event.transaction.hash.toHexString()
+      event.transaction.hash.toHexString(),
     ]);
   }
 
